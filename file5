@@ -1,0 +1,49 @@
+# train_rf_model.py
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+# Generate synthetic data
+np.random.seed(42)
+samples = 500
+
+data = pd.DataFrame({
+    "communication_freq": np.random.randint(0, 11, samples),
+    "meeting_attendance": np.random.randint(50, 101, samples),
+    "feedback_quality": np.random.randint(1, 6, samples),
+    "responsiveness": np.random.randint(1, 6, samples)
+})
+
+def label_engagement(row):
+    score = (row["communication_freq"] * 0.3 +
+             row["meeting_attendance"] * 0.2 +
+             row["feedback_quality"] * 0.25 +
+             row["responsiveness"] * 0.25)
+    if score < 30:
+        return 0  # Low
+    elif score < 60:
+        return 1  # Medium
+    else:
+        return 2  # High
+
+# Apply label
+data["engagement_level"] = data.apply(label_engagement, axis=1)
+
+# Train/test split
+X = data.drop(columns=["engagement_level"])
+y = data["engagement_level"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train RandomForest
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Save model
+joblib.dump(model, "models/rf_model.pkl")
+
+# Evaluation
+pred = model.predict(X_test)
+print(classification_report(y_test, pred, target_names=["Low", "Medium", "High"]))
