@@ -1,0 +1,73 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Step 1: Generate Synthetic Data
+np.random.seed(42)
+num_samples = 500
+
+data = pd.DataFrame({
+    "communication_freq": np.random.randint(0, 11, size=num_samples),  # 0–10 per month
+    "meeting_attendance": np.random.randint(0, 101, size=num_samples),  # percentage
+    "feedback_quality": np.random.randint(1, 6, size=num_samples),      # 1–5 scale
+    "responsiveness": np.random.randint(1, 6, size=num_samples),        # 1–5 scale
+})
+
+# Step 2: Define Engagement Level
+def engagement_level(row):
+    score = (
+        row["communication_freq"] * 0.3 +
+        row["meeting_attendance"] * 0.2 +
+        row["feedback_quality"] * 0.25 +
+        row["responsiveness"] * 0.25
+    )
+    if score < 30:
+        return "Low"
+    elif 30 <= score < 60:
+        return "Medium"
+    else:
+        return "High"
+
+data["engagement_level"] = data.apply(engagement_level, axis=1)
+
+# Step 3: Encode Target Variable
+target_map = {"Low": 0, "Medium": 1, "High": 2}
+data["target"] = data["engagement_level"].map(target_map)
+
+# Step 4: Train-Test Split
+X = data.drop(columns=["engagement_level", "target"])
+y = data["target"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Step 5: Model Training
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Step 6: Evaluation
+y_pred = model.predict(X_test)
+
+print("Classification Report:")
+print(classification_report(y_test, y_pred, target_names=["Low", "Medium", "High"]))
+
+print("Confusion Matrix:")
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Low", "Medium", "High"], yticklabels=["Low", "Medium", "High"])
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.title("Confusion Matrix")
+plt.show()
+
+# Optional: Predict New Stakeholder Example
+new_stakeholder = pd.DataFrame({
+    "communication_freq": [7],
+    "meeting_attendance": [85],
+    "feedback_quality": [4],
+    "responsiveness": [5]
+})
+predicted_level = model.predict(new_stakeholder)[0]
+print("Predicted Engagement Level:", list(target_map.keys())[list(target_map.values()).index(predicted_level)])
