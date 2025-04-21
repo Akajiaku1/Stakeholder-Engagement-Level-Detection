@@ -1,0 +1,50 @@
+# streamlit_app.py
+import streamlit as st
+import pandas as pd
+import joblib
+import os
+
+# Define simple risk mapping function
+RISK_MAP = {
+    "Low": 0.8,       # High risk
+    "Medium": 0.5,    # Moderate risk
+    "High": 0.2       # Low risk
+}
+
+def map_risk_level(level):
+    return RISK_MAP.get(level, 0.5)
+
+# Streamlit UI
+st.set_page_config(page_title="Stakeholder Engagement Detection", layout="centered")
+st.title("🔍 Stakeholder Engagement Level Detection Dashboard")
+
+# Load model
+model_path = "models/rf_model.pkl"
+if not os.path.exists(model_path):
+    st.error("Model file not found. Please train the model using train_rf_model.py.")
+else:
+    model = joblib.load(model_path)
+
+    # Upload CSV
+    uploaded_file = st.file_uploader("Upload stakeholder data (CSV)", type=["csv"])
+
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.subheader("📋 Uploaded Data Preview")
+        st.dataframe(df)
+
+        try:
+            # Make predictions
+            predictions = model.predict(df)
+            mapping = {0: "Low", 1: "Medium", 2: "High"}
+            df["Engagement Level"] = [mapping[p] for p in predictions]
+
+            # Map to risk
+            df["Risk Score"] = df["Engagement Level"].apply(map_risk_level)
+
+            st.subheader("📊 Prediction & Risk Mapping")
+            st.dataframe(df)
+
+            st.success("Prediction complete. Analyze the risk scores below.")
+        except Exception as e:
+            st.error(f"Error in prediction: {e}")
