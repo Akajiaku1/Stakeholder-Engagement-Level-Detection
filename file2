@@ -1,0 +1,20 @@
+import numpy as np
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+
+# Simulate time-series stakeholder data: (samples, timesteps, features)
+num_stakeholders = 100
+timesteps = 10  # e.g., 10 weeks
+features = 4  # comm_freq, attendance, feedback_quality, responsiveness
+
+X = np.random.rand(num_stakeholders, timesteps, features)
+y = np.random.randint(0, 3, size=num_stakeholders)  # 0=Low, 1=Medium, 2=High
+
+# LSTM Model
+model = Sequential([
+    LSTM(64, input_shape=(timesteps, features)),
+    Dense(32, activation='relu'),
+    Dense(3, activation='softmax')
+])
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.fit(X, y, epochs=20, batch_size=8)
